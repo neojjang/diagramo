@@ -67,6 +67,8 @@ if(is_numeric($_REQUEST['diagramId'])){
         <script type="text/javascript" src="./lib/commands/TranslateFigureCommand.js?<?=time()?>"></script>
         <script type="text/javascript" src="./lib/commands/RotateFigureCommand.js?<?=time()?>"></script>
         <script type="text/javascript" src="./lib/commands/ScaleFigureCommand.js?<?=time()?>"></script>
+        <script type="text/javascript" src="./lib/commands/RotateGroupCommand.js?<?=time()?>"></script>
+        <script type="text/javascript" src="./lib/commands/ScaleGroupCommand.js?<?=time()?>"></script>
         <script type="text/javascript" src="./lib/commands/ZOrderFigureCommand.js?<?=time()?>"></script>
         <script type="text/javascript" src="./lib/commands/CreateFigureCommand.js?<?=time()?>"></script>
         <script type="text/javascript" src="./lib/commands/TranslateGroupCommand.js?<?=time()?>"></script>
@@ -76,6 +78,7 @@ if(is_numeric($_REQUEST['diagramId'])){
         <script type="text/javascript" src="./lib/commands/CreateCommand.js?<?=time()?>"></script>
         <script type="text/javascript" src="./lib/commands/DeleteCommand.js?<?=time()?>"></script>
         <script type="text/javascript" src="./lib/commands/GroupFiguresCommand.js?<?=time()?>"></script>
+        <script type="text/javascript" src="./lib/commands/UngroupFiguresCommand.js?<?=time()?>"></script>
         <script type="text/javascript" src="./lib/commands/MatrixCommand.js?<?=time()?>"></script>
         <script type="text/javascript" src="./lib/commands/PropertyCommand.js?<?=time()?>"></script>
 
@@ -458,7 +461,7 @@ if(is_numeric($_REQUEST['diagramId'])){
 
             <a href="javascript:action('undo');" title="Undo (Ctrl-Z)"><img src="assets/images/arrow_undo.png" border="0"/></a>
             
-            <a href="javascript:action('redo');" title="Redo (Ctrl-Y)"><img src="assets/images/arrow_redo.png" border="0"/></a>
+            <!-- <a href="javascript:action('redo');" title="Redo (Ctrl-Y)"><img src="assets/images/arrow_redo.png" border="0"/></a> -->
             <!--
             <input type="text" id="output" />                
             <img style="vertical-align:middle;" src="../assets/images/toolbar_separator.gif" border="0" width="1" height="16"/>

@@ -97,12 +97,15 @@ Stack.prototype = {
         return null;
     },
 
-    /**Destroy a group by it's Id
-     * Also remove the figures from group (figure.groupId = -1)
+    /**Destroy a group by it's Id. 
+     *I will be removed from Stack's groups and any member figure will be removed
+     *from group (by set the groupId to -1)
      * @param {Number} groupId - the id of the group
      **/
     groupDestroy: function(groupId){
         var index = -1;
+        
+        //search for the group
         for(var i=0; i<this.groups.length; i++ ){
             if(this.groups[i].id == groupId){
                 index = i;
@@ -110,6 +113,7 @@ Stack.prototype = {
             }
         }
 
+        //remove it
         if(index > -1){
             //remove Group
             this.groups.splice(index, 1);
@@ -612,6 +616,24 @@ Stack.prototype = {
          * 4. selection area (last) 
          **/
         
+        if(visualDebug){
+            var  pos = 1;
+            context.save();
+            context.font = "10px Arial";
+            context.fillStyle= '#000000';
+            context.strokeStyle= '#000000';
+            context.lineWidth = 1;  
+            context.fillText("state: " + state, 0, 10 * pos++);
+            context.fillText("selectedFigureId: : " + selectedFigureId, 0, 10 * pos++);
+            context.fillText("selectedGroupId: : " + selectedGroupId, 0, 10 * pos++);
+            if(selectedGroupId != -1){
+                var logGroup = this.groupGetById(selectedGroupId);
+                context.fillText("permanent: : " + logGroup.permanent, 0, 10 * pos++);
+            }
+            context.restore();
+        }
+        
+        
         //paint figures
         for (var i=0; i<this.figures.length; i++) {
 
@@ -641,18 +663,18 @@ Stack.prototype = {
         //paint handlers for selected shape
         if(state == STATE_FIGURE_SELECTED){ //FIGURE
             var f = this.figureGetById(selectedFigureId)
-            HandleManager.figureSet(f);
+            HandleManager.shapeSet(f);
             //alert('Paint handles');
             HandleManager.paint(context);
         }
         else if(state == STATE_CONNECTOR_SELECTED){ //CONNECTOR
             var c = CONNECTOR_MANAGER.connectorGetById(selectedConnectorId)
-            HandleManager.figureSet(c);
+            HandleManager.shapeSet(c);
             HandleManager.paint(context);
         }
         else if(state == STATE_GROUP_SELECTED){ //GROUP 
             var g = this.groupGetById(selectedGroupId)
-            HandleManager.figureSet(g);
+            HandleManager.shapeSet(g);
             HandleManager.paint(context);
         }
 
