@@ -54,9 +54,10 @@ Stack.prototype = {
     /**Creates a {Group} based on a set of figure IDs
      * Group is created by 1. creating a Group and 2. setting Figure's groupId property to the new id of the Group
      *@param {Array} figureIds - all the ids of {Figure}s
+     *@param {Number} groupId - the id of the {Group} (optional) 
      *@return {Number} - the id of newly created Group
      **/
-    groupCreate:function (figureIds){
+    groupCreate:function (figureIds, groupId){
 
         //we should allow to create more than one temporary group
         for(var i=0; i<this.groups.length; i++){
@@ -66,7 +67,7 @@ Stack.prototype = {
         }
         
         //create group
-        var g = new Group();
+        var g = new Group(groupId);
 
         //add figures to group
         for(var i=0; i < figureIds.length; i++){
@@ -77,7 +78,7 @@ Stack.prototype = {
         g.rotationCoords.push(new Point(bounds[0]+(bounds[2]-bounds[0])/2, bounds[1] + (bounds[3] - bounds[1]) / 2));
         g.rotationCoords.push(new Point(bounds[0]+(bounds[2]-bounds[0])/2, bounds[1]));
 
-        //save group to stack
+        //save group to STACK
         this.groups.push(g);
 
         return g.id;
@@ -131,8 +132,8 @@ Stack.prototype = {
         throw Exception("Not implemented");
     },
     
-    /**See if this stack is equal to another. It is a shallow compare.
-     *@param {Stack} anotherStack - the other stack object
+    /**See if this STACK is equal to another. It is a shallow compare.
+     *@param {Stack} anotherStack - the other STACK object
      *@return {Boolean} - true if equals, false otherwise
      **/
     equals: function(anotherStack){
@@ -344,7 +345,7 @@ Stack.prototype = {
      *@return {Figure} - the figure connected, or null if none 
      **/
     figureGetAsFirstFigureForConnector: function(connectorId){
-        Log.group("stack: figureGetAsFirstFigureForConnector");
+        Log.group("STACK: figureGetAsFirstFigureForConnector");
         
         /*Algorithm
          *Connector -> first Connector's ConnectionPoint-> Glue -> Figure's ConnectionPoint -> Figure        
@@ -384,7 +385,7 @@ Stack.prototype = {
      *@return {Figure} - the figure connected, or null if none 
      **/    
     figureGetAsSecondFigureForConnector: function(connectorId){
-        Log.group("stack: figureGetAsSecondFigureForConnector");
+        Log.group("STACK: figureGetAsSecondFigureForConnector");
         
         /*Algorithm
          *Connector -> first Connector's ConnectionPoint-> Glue -> Figure's ConnectionPoint -> Figure        
@@ -608,7 +609,7 @@ Stack.prototype = {
      *@param  {Context} context - the 2D context
      **/
     paint:function(context){
-//        Log.group("stack: paint");
+//        Log.group("STACK: paint");
         /*The ideea is to paint from bottom to top
          * 1. figures (first)
          * 2. connectors
@@ -630,6 +631,12 @@ Stack.prototype = {
                 var logGroup = this.groupGetById(selectedGroupId);
                 context.fillText("permanent: : " + logGroup.permanent, 0, 10 * pos++);
             }
+            context.fillText("selectedConnectorId: : " + selectedConnectorId, 0, 10 * pos++);
+            if(selectedConnectorId != -1){
+                var connector = CONNECTOR_MANAGER.connectorGetById(selectedConnectorId);
+                context.fillText("connector type: : " + connector.type, 0, 10 * pos++);
+            }
+                
             context.restore();
         }
         
@@ -738,18 +745,18 @@ Stack.prototype = {
             }
             
             //paint the legend
-            var dY = 20;
+            pos += 4;
             for(var solName in colors){
                 context.save();
-                context.strokeText(solName, 0, dY);
+                context.strokeText(solName, 0, 10 * pos);
                 context.strokeStyle = colors[solName];
                 context.beginPath();
-                context.moveTo(50, dY);
-                context.lineTo(150, dY);
+                context.moveTo(50, 10 * pos);
+                context.lineTo(150, 10 * pos);
                 //context.endPath();
                 context.stroke();
                 context.restore();
-                dY += 20;
+                pos += 2;
             }
             context.restore();
             
@@ -759,7 +766,7 @@ Stack.prototype = {
 //        Log.groupEnd();
     },
 
-    /**Convert all stack to SVG representation
+    /**Convert all STACK to SVG representation
      *@return {String} - the SVG string representation*/
     toSVG : function(){
         var svg = ' ';

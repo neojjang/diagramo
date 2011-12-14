@@ -1,5 +1,7 @@
 /* 
  * This is triggered when a figure was rotated
+ * @this {RotateFigureCommand} 
+ * @constructor
  * @author Alex Gheorghiu <alex@scriptoid.com>
  */
 function RotateFigureCommand(figureId, matrix, reverseMatrix){
@@ -20,14 +22,14 @@ RotateFigureCommand.prototype = {
     
     /**This method got called every time the Command must execute*/
     execute : function(){  
-        var fig = stack.figureGetById(this.figureId);                
+        var fig = STACK.figureGetById(this.figureId);                
         fig.transform(this.matrix);        
     },
     
     
     /**This method should be called every time the Command should be undone*/
     undo : function(){        
-        var fig = stack.figureGetById(this.figureId);
+        var fig = STACK.figureGetById(this.figureId);
         fig.transform(this.reverseMatrix);
     }
 }

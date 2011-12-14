@@ -49,7 +49,7 @@ var Util = {
     /**Updates first letter of a string
      *@param {String} string -  the actual string
      *@return {String} the string with first letter capitalized
-     *@see <a href="http://stackoverflow.com/questions/1026069/capitalize-first-letter-of-string-in-javascript">http://stackoverflow.com/questions/1026069/capitalize-first-letter-of-string-in-javascript</a>
+     *@see <a href="http://STACKoverflow.com/questions/1026069/capitalize-first-letter-of-string-in-javascript">http://STACKoverflow.com/questions/1026069/capitalize-first-letter-of-string-in-javascript</a>
      **/
     capitaliseFirstLetter : function(string){
         return string.charAt(0).toUpperCase() + string.slice(1);
@@ -251,14 +251,14 @@ var Util = {
      *@author Alex
      **/
     collinearity: function(p1, p2, p3){
-            // check for vertical line
-            if (p1.x == p2.x) {
-                return p3.x == p1.x;
-            } else { // usual (not vertical) line can be represented as y = a * x + b
-                var a = (p2.y - p1.y) / (p2.x - p1.x);
-                var b = p1.y - a * p1.x;
-                return p3.y == a * p3.x + b;
-            }
+        // check for vertical line
+        if (p1.x == p2.x) {
+            return p3.x == p1.x;
+        } else { // usual (not vertical) line can be represented as y = a * x + b
+            var a = (p2.y - p1.y) / (p2.x - p1.x);
+            var b = p1.y - a * p1.x;
+            return p3.y == a * p3.x + b;
+        }
     },
 
 
@@ -618,7 +618,7 @@ function signum(x){
 
 /** Check if a value is numeric
  * @param {String} input - a numeric value
- * @see <a href="http://stackoverflow.com/questions/18082/validate-numbers-in-javascript-isnumeric">http://stackoverflow.com/questions/18082/validate-numbers-in-javascript-isnumeric</a>
+ * @see <a href="http://STACKoverflow.com/questions/18082/validate-numbers-in-javascript-isnumeric">http://STACKoverflow.com/questions/18082/validate-numbers-in-javascript-isnumeric</a>
  * @author Zack Newsham <zack_newsham@yahoo.co.uk>
  * */
 function isNumeric(input){

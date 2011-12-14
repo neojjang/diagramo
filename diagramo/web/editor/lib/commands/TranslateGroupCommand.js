@@ -1,5 +1,7 @@
 /* 
  * This is triggered when a figure was moved
+ * @this {TranslateGroupCommand} 
+ * @constructor
  * @author Alex Gheorghiu <alex@scriptoid.com>
  * @param {Integer} groupId - the id of the figure translated
  * @param {Array} matrix - the transformation matrix of translation
@@ -31,14 +33,14 @@ TranslateGroupCommand.prototype = {
     
     /**This method got called every time the Command must execute*/
     execute : function(){  
-        var group = stack.groupGetById(this.groupId);                
+        var group = STACK.groupGetById(this.groupId);                
         group.transform(this.matrix);        
     },
     
     
     /**This method should be called every time the Command should be undone*/
     undo : function(){        
-        var group = stack.groupGetById(this.groupId);
+        var group = STACK.groupGetById(this.groupId);
         group.transform(this.reverseMatrix);
     }
 }
