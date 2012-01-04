@@ -64,27 +64,31 @@ if(is_numeric($_REQUEST['diagramId'])){
         <script type="text/javascript" src="./lib/minimap.js?<?=time()?>"></script>
 
         <script type="text/javascript" src="./lib/commands/History.js?<?=time()?>"></script>
-        <script type="text/javascript" src="./lib/commands/TranslateFigureCommand.js?<?=time()?>"></script>
-        <script type="text/javascript" src="./lib/commands/RotateFigureCommand.js?<?=time()?>"></script>
-        <script type="text/javascript" src="./lib/commands/ScaleFigureCommand.js?<?=time()?>"></script>
-        <script type="text/javascript" src="./lib/commands/RotateGroupCommand.js?<?=time()?>"></script>
-        <script type="text/javascript" src="./lib/commands/ScaleGroupCommand.js?<?=time()?>"></script>
-        <script type="text/javascript" src="./lib/commands/ZOrderFigureCommand.js?<?=time()?>"></script>
-        <script type="text/javascript" src="./lib/commands/GroupFiguresCommand.js?<?=time()?>"></script>
-        <script type="text/javascript" src="./lib/commands/UngroupFiguresCommand.js?<?=time()?>"></script>
-        <script type="text/javascript" src="./lib/commands/DeleteFigureCommand.js?<?=time()?>"></script>
-        <script type="text/javascript" src="./lib/commands/DeleteGroupCommand.js?<?=time()?>"></script>
-        <script type="text/javascript" src="./lib/commands/CreateConnectorCommand.js?<?=time()?>"></script>
-        <script type="text/javascript" src="./lib/commands/DeleteConnectorCommand.js?<?=time()?>"></script>
         
-        <script type="text/javascript" src="./lib/commands/CreateFigureCommand.js?<?=time()?>"></script>
-        <script type="text/javascript" src="./lib/commands/TranslateGroupCommand.js?<?=time()?>"></script>
+        <script type="text/javascript" src="./lib/commands/FigureCreateCommand.js?<?=time()?>"></script>
+        <script type="text/javascript" src="./lib/commands/FigureTranslateCommand.js?<?=time()?>"></script>
+        <script type="text/javascript" src="./lib/commands/FigureRotateCommand.js?<?=time()?>"></script>
+        <script type="text/javascript" src="./lib/commands/FigureScaleCommand.js?<?=time()?>"></script>
+        <script type="text/javascript" src="./lib/commands/FigureZOrderCommand.js?<?=time()?>"></script>
+        <script type="text/javascript" src="./lib/commands/FigureDeleteCommand.js?<?=time()?>"></script>
+        
+        <script type="text/javascript" src="./lib/commands/GroupRotateCommand.js?<?=time()?>"></script>
+        <script type="text/javascript" src="./lib/commands/GroupScaleCommand.js?<?=time()?>"></script>        
+        <script type="text/javascript" src="./lib/commands/GroupCreateCommand.js?<?=time()?>"></script>
+        <script type="text/javascript" src="./lib/commands/GroupDestroyCommand.js?<?=time()?>"></script>        
+        <script type="text/javascript" src="./lib/commands/GroupDeleteCommand.js?<?=time()?>"></script>
+        <script type="text/javascript" src="./lib/commands/GroupTranslateCommand.js?<?=time()?>"></script>
+        
+        <script type="text/javascript" src="./lib/commands/ConnectorCreateCommand.js?<?=time()?>"></script>
+        <script type="text/javascript" src="./lib/commands/ConnectorDeleteCommand.js?<?=time()?>"></script>                        
+        
+        <script type="text/javascript" src="./lib/commands/ConnectorAlterCommand.js?<?=time()?>"></script>
+        
+        <script type="text/javascript" src="./lib/commands/ShapeChangePropertyCommand.js?<?=time()?>"></script>
+        
         <script type="text/javascript" src="./lib/commands/CanvasResizeCommand.js?<?=time()?>"></script>
-        <script type="text/javascript" src="./lib/commands/ConnectCommand.js?<?=time()?>"></script>
-        <script type="text/javascript" src="./lib/commands/ConnectorHandleCommand.js?<?=time()?>"></script>
-        <script type="text/javascript" src="./lib/commands/MatrixCommand.js?<?=time()?>"></script>
-        <script type="text/javascript" src="./lib/commands/PropertyCommand.js?<?=time()?>"></script>
-
+        
+        
         <script type="text/javascript" src="./assets/javascript/json2.js"></script>
         <script type="text/javascript" src="./assets/javascript/jquery-1.4.2.min.js"></script>
         <script type="text/javascript" src="./assets/javascript/ajaxfileupload.js"></script>
@@ -103,16 +107,7 @@ if(is_numeric($_REQUEST['diagramId'])){
 
         
         <script type="text/javascript">
-            /**Export the Canvas as SVG*/
-            function toSVG(){
-                var canvas = getCanvas();
-                var v2 = '<svg width="' + canvas.width +'" height="' + canvas.height + '" viewBox="0 0 ' + canvas.width + ' ' + canvas.height + '" xmlns="http://www.w3.org/2000/svg" version="1.1">';
-                v2 += STACK.toSVG();
-                v2 += CONNECTOR_MANAGER.toSVG();
-                v2 += '</svg>';
-
-                return v2;
-            }
+            
 
              /** Save current diagram
              *See:
@@ -501,7 +496,7 @@ if(is_numeric($_REQUEST['diagramId'])){
                             if(counter % 3 == 0){
                                 document.write('<tr>');
                             }
-                            document.write('<td><a href="javascript:createFigure(figure_'+figure.figureFunction+');"><img src="lib/sets/'+set+'/'+figure.image+'" border="0" alt="###" /></a></td>');
+                            document.write('<td align="center"><a href="javascript:createFigure(figure_'+figure.figureFunction+');"><img src="lib/sets/'+set+'/'+figure.image+'" border="0" alt="'+ figure.figureFunction + '" /></a></td>');
                             counter ++;
                             if(counter % 3 == 0){
                                 document.write('</tr>');
@@ -515,15 +510,6 @@ if(is_numeric($_REQUEST['diagramId'])){
                     }
                 </script>
                 
-                <div style="display:none;" id="experimental">
-                    <table border="0" cellpadding="0" cellspacing="0" width="120">
-                        <tr>
-                            <td><a href="javascript:createFigure(figure_Stop);"><img src="assets/images/figures/na.png" border="0" alt="figure_Stop" /></a></td>
-                            <td><a href="javascript:createFigure(figure_SimpleImage);">Image</a></td>
-                            <td><a href="javascript:createFigure(figure_ImageFrame);">Frame</a></td>                            
-                        </tr>
-                    </table>
-                </div>
                 <div style="display:none;" id="more">
                     More sets of figures <a href="http://diagramo.com/figures.php" target="_new">here</a>
                 </div>

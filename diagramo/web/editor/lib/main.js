@@ -55,6 +55,30 @@ var connectorType = '';
 document.onselectstart = stopselection;
 
 
+/**Used to generate nice formatted SVG files */
+var INDENTATION = 0;
+
+/**Export the Canvas as SVG. It will descend to whole graph of objects and ask
+ *each one to convert to SVG (and use the proper indentation)
+ *Note: Placed out of editor.php so we can safelly add '<?...' string
+ *@author Alex
+ **/
+function toSVG(){
+    var canvas = getCanvas();
+    //@see http://www.w3schools.com/svg/svg_example.asp
+    var v2 = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+    v2 += "\n" + '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="' 
+        + canvas.width +'" height="' + canvas.height 
+        + '" viewBox="0 0 ' + canvas.width + ' ' + canvas.height + '" version="1.1">';
+    INDENTATION++;
+    v2 += STACK.toSVG();
+    v2 += CONNECTOR_MANAGER.toSVG();
+    INDENTATION--;
+    v2 += "\n" + '</svg>';
+    
+    return v2;
+}
+            
 
 /**Supposelly stop any selection from happening
  *@deprecated
@@ -201,39 +225,23 @@ function setFigureSet(id){
 
 
 /**Update an object (Figure or Connector)
- *@param {Number} figureId - the id of the updating object
+ *@param {Number} shapeId - the id of the updating object
  *@param {String} property - (or an {Array} of {String}s). The 'id' under which the property is stored
  *TODO: is there any case where we are using property as an array ?
  *@param {String} newValue - the new value of the property
  *@author Zack, Alex
  **/
-function updateFigure(figureId, property, newValue){
+function updateShape(shapeId, property, newValue){
     //Log.group("main.js-->updateFigure");
-    //Log.info("updateFigure() figureId: " + figureId + " property: " + property + ' new value: ' + newValue);
+    //Log.info("updateShape() figureId: " + figureId + " property: " + property + ' new value: ' + newValue);
     
-    /*Try to guess the object type*/
-    var objType = null;
-    var obj = STACK.figureGetById(figureId); //try to find it inside {Figure}s
-    
-    if(obj){ //try to find it inside {Connector}s
-        objType = History.OBJECT_FIGURE;        
-    }
-    else{ //no in Figures
-        obj = CONNECTOR_MANAGER.connectorGetById(figureId); //search in Connectors
-        //Log.info("updateFigure(): it's a connector 1");
-        
-        if(obj){ //see if it's a Canvas
-            objType = History.OBJECT_CONNECTOR;            
-        }
-        else{ //no in connectors
-            if(figureId == "canvasProps"){
-                obj = canvasProps;
-            //Log.info("updateFigure(): it's the canvas");
-            }
-        }
-    }
+    var obj = STACK.figureGetById(shapeId); //try to find it inside {Figure}s
 
-    
+
+    //TODO: this horror must dissapear
+    if(!obj){
+        obj = CONNECTOR_MANAGER.connectorGetById(shapeId);
+    }
 
     var objSave = obj; //keep a reference to initial shape
 
@@ -258,8 +266,8 @@ function updateFigure(figureId, property, newValue){
 
     //the property name
     var propName = props[props.length -1];
-    //Log.info("updateFigure(): last property: " + propName);
-    //Log.info("updateFigure(): last object in hierarchy: " + obj.oType);
+    //Log.info("updateShape(): last property: " + propName);
+    //Log.info("updateShape(): last object in hierarchy: " + obj.oType);
 
 
     /*Now we are located at Figure level or somewhere in a primitive or another object.
@@ -279,20 +287,22 @@ function updateFigure(figureId, property, newValue){
          */
         
         if(newValue != obj[propGet]()){ //update ONLY if new value differ from the old one
-            //Log.info('updateFigure() : penultimate propSet: ' +  propSet);
-            if(doUndo && obj[propGet]() != newValue){
-                var undo = new PropertyCommand(figureId, objType, property, obj[propGet](), newValue)
+            //Log.info('updateShape() : penultimate propSet: ' +  propSet);
+            if(obj[propGet]() != newValue){
+                var undo = new ShapeChangePropertyCommand(shapeId, property, newValue)
+                undo.execute();
                 History.addUndo(undo);
             }
-            //Log.info('updateFigure() : call setXXX on object: ' +  propSet + " new value: " + newValue);
+            //Log.info('updateShape() : call setXXX on object: ' +  propSet + " new value: " + newValue);
             //            obj[propSet](figure,newValue);
             obj[propSet](newValue);
         }
     }
     else{
         if(obj[propName] != newValue){ //try to change it ONLY if new value is different than the last one
-            if(doUndo && obj[propName] != newValue){
-                var undo = new PropertyCommand(figureId, objType, property, obj[propName], newValue)
+            if(obj[propName] != newValue){
+                var undo = new ShapeChangePropertyCommand(shapeId, property, newValue)
+                undo.execute();
                 History.addUndo(undo);
             }
             obj[propName] = newValue;
@@ -301,7 +311,7 @@ function updateFigure(figureId, property, newValue){
 
     //connector's text special case
     if(objSave instanceof Connector && propName == 'str'){
-        //Log.info("updateFigure(): it's a connector 2");
+        //Log.info("updateShape(): it's a connector 2");
         objSave.updateMiddleText();
     }
     
@@ -330,7 +340,7 @@ function setUpEditPanel(shape){
             case 'CanvasProps':
                 Builder.constructCanvasPropertiesPanel(propertiesPanel, shape);
                 break;
-            default:
+            default: //both Figure and Connector
                 Builder.contructPropertiesPanel(propertiesPanel, shape);
         }
     }
@@ -496,7 +506,7 @@ function onKeyDown(ev){
 
                 case STATE_FIGURE_SELECTED: //delete a figure ONLY when the figure is selected
                     if(selectedFigureId != -1){
-                        var cmdDelFig = new DeleteFigureCommand(selectedFigureId);
+                        var cmdDelFig = new FigureDeleteCommand(selectedFigureId);
                         cmdDelFig.execute();
                         History.addUndo(cmdDelFig);
                     }                    
@@ -504,7 +514,7 @@ function onKeyDown(ev){
                     
                 case STATE_GROUP_SELECTED:
                     if(selectedGroupId != -1){
-                        var cmdDelGrp = new DeleteGroupCommand(selectedGroupId);
+                        var cmdDelGrp = new GroupDeleteCommand(selectedGroupId);
                         cmdDelGrp.execute();
                         History.addUndo(cmdDelGrp);
                     }
@@ -514,7 +524,7 @@ function onKeyDown(ev){
                 case STATE_CONNECTOR_SELECTED:
                     Log.group("Delete connector");
                     if(selectedConnectorId != -1){
-                        var cmdDelCon = new DeleteConnectorCommand(selectedConnectorId);
+                        var cmdDelCon = new ConnectorDeleteCommand(selectedConnectorId);
                         cmdDelCon.execute();
                         History.addUndo(cmdDelCon);                                                
                     }
@@ -701,7 +711,7 @@ function onMouseDown(ev){
             if(createFigureFunction){
                 Log.info("onMouseDown() + STATE_FIGURE_CREATE--> new state STATE_FIGURE_SELECTED");
                 
-                var cmdCreateFig = new CreateFigureCommand(createFigureFunction, x, y);
+                var cmdCreateFig = new FigureCreateCommand(createFigureFunction, x, y);
                 cmdCreateFig.execute();
                 History.addUndo(cmdCreateFig);
                 
@@ -910,98 +920,81 @@ function onMouseDown(ev){
             /*
              *Description:
              *If we have a connector selected and we press mouse here is what is happening:
-             *- mouse down over a connection point?
+             *- mouse down over a connection point? (trat first current connector)
              *      - select connection point 
              *      - set state to STATE_CONNECTOR_MOVE_POINT 
-             *      (and wait mouse move to alter and mouse up to finish the modification)
+             *      (and wait mouseMove to alter and mouseUp to finish the modification)
              *      - store original state of the connector (to be able to create the undo command later)
              *- mouse down over a handler?
              *      - select handle
-             *      
-             * TODO: implement it
+             *- mouse down over a connector?
+             *      - same connector (do nothing)
+             *      - different connector?      
+             *- mouse down over a figure? (maybe in the future...to reduce nr. of clicks)      
              **/
+                        
             var cps = CONNECTOR_MANAGER.connectionPointGetAllByParent(selectedConnectorId);
             var start = cps[0];
             var end = cps[1];
+            
+            //did we click any of the connection points?
             if(start.point.near(x, y, 3)){
-                var g = CONNECTOR_MANAGER.glueGetBySecondConnectionPointId(start.id);
-                
                 Log.info("Picked the start point");
                 selectedConnectionPointId = start.id;
-                if(g.length != 0 && doUndo == true){//CONNECTOR_MANAGER.connectorGetById(selectedConnectorId).turningPoints[0]
-                    currentMoveUndo = new MatrixCommand(selectedConnectionPointId, History.OBJECT_CONNECTION_POINT , [g[0].id1,g[0].id2], Matrix.translationMatrix(start.point.x,start.point.y),null);
-                }
-                else if(doUndo == true) {
-                    currentMoveUndo = new MatrixCommand(selectedConnectionPointId, History.OBJECT_CONNECTION_POINT , null, Matrix.translationMatrix(start.point.x,start.point.y),null);
-                }
                 state = STATE_CONNECTOR_MOVE_POINT;
-                HTMLCanvas.style.cursor = 'move';
+                HTMLCanvas.style.cursor = 'default';
+                
+                //this acts like clone of the connector
+                var undoCmd = new ConnectorAlterCommand(selectedConnectorId); 
+                History.addUndo(undoCmd);
             }
             else if(end.point.near(x, y, 3)){
-                var g = CONNECTOR_MANAGER.glueGetBySecondConnectionPointId(end.id);
-
                 Log.info("Picked the end point");
                 selectedConnectionPointId = end.id;
-                if(g.length != 0 && doUndo == true){//CONNECTOR_MANAGER.connectorGetById(selectedConnectorId).turningPoints[CONNECTOR_MANAGER.connectorGetById(selectedConnectorId).turningPoints.length - 1]
-                    currentMoveUndo = new MatrixCommand(selectedConnectionPointId, History.OBJECT_CONNECTION_POINT, [g[0].id1,g[0].id2], Matrix.translationMatrix(end.point.x,end.point.y),null);
-                }
-                else if(doUndo == true){
-                    currentMoveUndo = new MatrixCommand(selectedConnectionPointId, History.OBJECT_CONNECTION_POINT, null, Matrix.translationMatrix(end.point.x,end.point.y),null);
-                }
                 state = STATE_CONNECTOR_MOVE_POINT;
-                HTMLCanvas.style.cursor = 'move';
+                HTMLCanvas.style.cursor = 'default';
+                
+                //this acts like clone of the connector
+                var undoCmd = new ConnectorAlterCommand(selectedConnectorId); 
+                History.addUndo(undoCmd);
             }
-            else{ //no connection point selection
-
-                var newCId = selectedConnectorId;
-                if(HandleManager.handleGet(x,y) == null){//we only get a new connector, if we are not currently
-                    //over the current connectors handles
-                    newCId = CONNECTOR_MANAGER.connectorGetByXY(x, y); //did we picked another connector?
-                }
-                if(newCId == -1){
-                    Log.info('No other connector selected. Deselect all connectors');
-                    selectedConnectorId = -1;
-                    state = STATE_NONE;
-                    setUpEditPanel(canvasProps);
-                    redraw = true;
-
-                //START: Quick Select FIGURE
-                //                    var fId = STACK.figureGetByXY(x, y);
-                //                    if(fId != -1){ //select figure
-                //                        Log.info("onMouseDown() + STATE_CONNECTOR_SELECTED - quick select a figure, new state (STATE_FIGURE_SELECTED)");
-                //                        selectedFigureId = fId;
-                //                        var f = STACK.figureGetById(fId);
-                //                        setUpEditPanel(f);
-                //                        mousePressed = false;
-                //                        state = STATE_FIGURE_SELECTED;
-                //                    }
-                //END: Quick Select FIGURE
-                }
-                else if(newCId == selectedConnectorId){ //did we picked the same connector?
-                    //do nothing - it's the same connector
-                    Log.info("onMouseDown(): Nothing, it's the same connector");
-                } else{
-                    Log.info('onMouseDown(): Select another connector');
-                    selectedConnectorId = newCId;
-                    setUpEditPanel(CONNECTOR_MANAGER.connectorGetById(selectedConnectorId));
-                    state = STATE_CONNECTOR_SELECTED;
-                    redraw = true;
-                }
-                if(HandleManager.handleGet(x, y) != null){ //select handle
-                    Log.info("onMouseDown() + STATE_FIGURE_SELECTED - handle selected");
+            else{ //no connection point selected
+                
+                //see if handler selected
+                if(HandleManager.handleGet(x,y) != null){
+                    Log.info("onMouseDown() + STATE_CONNECTOR_SELECTED - handle selected");
                     HandleManager.handleSelectXY(x,y);
                     
+                    //TODO: just copy/paste code ....this acts like clone of the connector
+                    var undoCmd = new ConnectorAlterCommand(selectedConnectorId); 
+                    History.addUndo(undoCmd);
                 }
-
-            //canvas.style.cursor = 'default';
-            //state  = STATE_NONE;
-            }
-
-            break;
+                else{
+                    //did we select another connector?
+                    var newConId = CONNECTOR_MANAGER.connectorGetByXY(x, y); //did we picked another connector?
+                    switch(newConId){
+                        case -1: //nothing else selected....deselect all
+                            selectedConnectorId = -1;
+                            state = STATE_NONE;
+                            setUpEditPanel(canvasProps);
+                            redraw = true;
+                            break;
+                        case selectedConnectorId: //same connector...do nothing
+                            break;
+                        default: //another connector
+                            selectedConnectorId = newConId;
+                            setUpEditPanel(CONNECTOR_MANAGER.connectorGetById(selectedConnectorId));
+                            state = STATE_CONNECTOR_SELECTED;
+                            redraw = true;                            
+                    }//end switch
+                    
+                }                                                    
+            }                        
+            break; //end case STATE_CONNECTOR_SELECTED 
 
             
         default:
-    //alert("onMouseDown() - switch default - state is " + state);
+            //alert("onMouseDown() - switch default - state is " + state);
     }
 
     draw();
@@ -1098,7 +1091,7 @@ function onMouseUp(ev){
         case STATE_CONNECTOR_PICK_SECOND:
 
             //store undo command
-            var cmdCreateCon = new CreateConnectorCommand(selectedConnectorId);
+            var cmdCreateCon = new ConnectorCreateCommand(selectedConnectorId);
             History.addUndo(cmdCreateCon);
             
             //reset all {ConnectionPoint}s' color
@@ -1270,7 +1263,7 @@ function onMouseMove(ev){
                         /*move figure only if no handle is selected*/
                         canvas.style.cursor = 'move';
                         var translateMatrix = generateMoveMatrix(STACK.figureGetById(selectedFigureId), x, y);
-                        var cmdTranslateFigure = new TranslateFigureCommand(selectedFigureId, translateMatrix);
+                        var cmdTranslateFigure = new FigureTranslateCommand(selectedFigureId, translateMatrix);
                         History.addUndo(cmdTranslateFigure);
                         cmdTranslateFigure.execute();
                         redraw = true;
@@ -1338,7 +1331,7 @@ function onMouseMove(ev){
                         Log.info('onMouseMove() - STATE_GROUP_SELECTED + mouse pressed + NOT over a Handle');
                         canvas.style.cursor = 'move';
                         var mTranslate = generateMoveMatrix(STACK.groupGetById(selectedGroupId), x, y);
-                        var cmdTranslateGroup = new TranslateGroupCommand(selectedGroupId, mTranslate);
+                        var cmdTranslateGroup = new GroupTranslateCommand(selectedGroupId, mTranslate);
                         cmdTranslateGroup.execute();
                         History.addUndo(cmdTranslateGroup);
                         redraw = true;
@@ -1456,11 +1449,11 @@ function onMouseMove(ev){
                     }
                 }
                 
-                //store the Command in History
-                if(difference && doUndo){
-                    currentMoveUndo = new ConnectorHandleCommand(selectedConnectorId, History.OBJECT_CONNECTOR, null, oldTurns, newTurns);
-                    History.addUndo(currentMoveUndo);
-                }
+//                //store the Command in History
+//                if(difference && doUndo){
+//                    currentMoveUndo = new ConnectorHandleCommand(selectedConnectorId, History.OBJECT_CONNECTOR, null, oldTurns, newTurns);
+//                    History.addUndo(currentMoveUndo);
+//                }
                     
                 redraw = true;
             }
@@ -1478,24 +1471,10 @@ function onMouseMove(ev){
             Log.info("Easy easy easy....it's fragile");
             if(mousePressed){ //only if we are dragging
                 
-
-
                 /*update connector - but not unglue/glue it (Unglue and glue is handle in onMouseUp)
                  *as we want the glue-unglue to produce only when mouse is released*/   
                 connectorMovePoint(selectedConnectionPointId, x, y, ev);
-//                if(cps[0].id == selectedConnectionPointId){ //start
-//                    //alert('start');
-//                    cps[0].point.x = x;
-//                    cps[0].point.y = y;
-//                    con.turningPoints[0].x = x;
-//                    con.turningPoints[0].y = y;
-//                } else{ //end
-//                    //alert('end');
-//                    cps[1].point.x = x;
-//                    cps[1].point.y = y;
-//                    con.turningPoints[con.turningPoints.length - 1].x = x;
-//                    con.turningPoints[con.turningPoints.length - 1].y = y;
-//                }
+
                 redraw = true;
             }
             break;
@@ -1991,7 +1970,7 @@ function action(action){
             if(selectedGroupId != -1){
                 var group = STACK.groupGetById(selectedGroupId);
                 if(!group.permanent){ //group only temporary groups
-                    var cmdGroup = new GroupFiguresCommand(selectedGroupId);
+                    var cmdGroup = new GroupCreateCommand(selectedGroupId);
                     cmdGroup.execute();
                     History.addUndo(cmdGroup);
                     Log.info("main.js->action()->Group. New group made permanent. Group id = " + selectedGroupId);
@@ -2008,7 +1987,7 @@ function action(action){
             if(selectedGroupId != -1){
                 var group = STACK.groupGetById(selectedGroupId);
                 if(group.permanent){ //split only permanent groups
-                    var cmdUngroup = new UngroupFiguresCommand(selectedGroupId);
+                    var cmdUngroup = new GroupDestroyCommand(selectedGroupId);
                     cmdUngroup.execute();
                     History.addUndo(cmdUngroup);
                     Log.info("main.js->action()->Ungroup. New group made permanent. Group id = " + selectedGroupId);
@@ -2083,13 +2062,13 @@ function action(action){
         case 'up': //decrease Y                                   
             switch(state){
                 case STATE_FIGURE_SELECTED:
-                    var cmdFigUp = new TranslateFigureCommand(selectedFigureId, Matrix.UP);
+                    var cmdFigUp = new FigureTranslateCommand(selectedFigureId, Matrix.UP);
                     History.addUndo(cmdFigUp);
                     cmdFigUp.execute();
                     redraw = true;
                     break;
                 case STATE_GROUP_SELECTED:
-                    var cmdGrpUp = new TranslateGroupCommand(selectedGroupId, Matrix.UP);
+                    var cmdGrpUp = new GroupTranslateCommand(selectedGroupId, Matrix.UP);
                     History.addUndo(cmdGrpUp);
                     cmdGrpUp.execute();
                     redraw = true;
@@ -2101,14 +2080,14 @@ function action(action){
         case 'down':
             switch(state){
                 case STATE_FIGURE_SELECTED:
-                    var cmdFigDown = new TranslateFigureCommand(selectedFigureId, Matrix.DOWN);
+                    var cmdFigDown = new FigureTranslateCommand(selectedFigureId, Matrix.DOWN);
                     History.addUndo(cmdFigDown);
                     cmdFigDown.execute();
                     redraw = true;
                     break;
                     
                 case STATE_GROUP_SELECTED:
-                    var cmdGrpDown = new TranslateGroupCommand(selectedGroupId, Matrix.DOWN);
+                    var cmdGrpDown = new GroupTranslateCommand(selectedGroupId, Matrix.DOWN);
                     History.addUndo(cmdGrpDown);
                     cmdGrpDown.execute();
                     redraw = true;
@@ -2119,14 +2098,14 @@ function action(action){
         case 'right':
             switch(state){
                 case STATE_FIGURE_SELECTED:
-                    var cmdFigRight = new TranslateFigureCommand(selectedFigureId, Matrix.RIGHT);
+                    var cmdFigRight = new FigureTranslateCommand(selectedFigureId, Matrix.RIGHT);
                     History.addUndo(cmdFigRight);
                     cmdFigRight.execute();
                     redraw = true;
                     break;
                     
                 case STATE_GROUP_SELECTED:
-                    var cmdGrpRight = new TranslateGroupCommand(selectedGroupId, Matrix.RIGHT);
+                    var cmdGrpRight = new GroupTranslateCommand(selectedGroupId, Matrix.RIGHT);
                     History.addUndo(cmdGrpRight);
                     cmdGrpRight.execute();
                     redraw = true;
@@ -2137,14 +2116,14 @@ function action(action){
         case 'left':
             switch(state){
                 case STATE_FIGURE_SELECTED:
-                    var cmdFigLeft = new TranslateFigureCommand(selectedFigureId, Matrix.LEFT);
+                    var cmdFigLeft = new FigureTranslateCommand(selectedFigureId, Matrix.LEFT);
                     History.addUndo(cmdFigLeft);
                     cmdFigLeft.execute();
                     redraw = true;
                     break;
                     
                 case STATE_GROUP_SELECTED:
-                    var cmdGrpLeft = new TranslateGroupCommand(selectedGroupId, Matrix.LEFT);
+                    var cmdGrpLeft = new GroupTranslateCommand(selectedGroupId, Matrix.LEFT);
                     History.addUndo(cmdGrpLeft);
                     cmdGrpLeft.execute();
                     redraw = true;
@@ -2237,7 +2216,7 @@ function action(action){
 
         case 'back':
             if(selectedFigureId != -1){
-                var cmdBack = new ZOrderFigureCommand(selectedFigureId, 0);
+                var cmdBack = new FigureZOrderCommand(selectedFigureId, 0);
                 cmdBack.execute();
                 History.addUndo(cmdBack);
                 //STACK.setPosition(selectedFigureId, 0);
@@ -2247,7 +2226,7 @@ function action(action){
 
         case 'front':
             if(selectedFigureId != -1){
-                var cmdFront = new ZOrderFigureCommand(selectedFigureId, STACK.figures.length-1);
+                var cmdFront = new FigureZOrderCommand(selectedFigureId, STACK.figures.length-1);
                 cmdFront.execute();
                 History.addUndo(cmdFront);                
                 redraw = true;
@@ -2256,7 +2235,7 @@ function action(action){
 
         case 'moveback':
             if(selectedFigureId != -1){
-                var cmdMoveBack = new ZOrderFigureCommand(selectedFigureId, STACK.idToIndex[selectedFigureId] - 1);
+                var cmdMoveBack = new FigureZOrderCommand(selectedFigureId, STACK.idToIndex[selectedFigureId] - 1);
                 cmdMoveBack.execute();
                 History.addUndo(cmdMoveBack);
                 redraw = true;
@@ -2265,7 +2244,7 @@ function action(action){
 
         case 'moveforward':
             if(selectedFigureId != -1){
-                var cmdMoveForward = new ZOrderFigureCommand(selectedFigureId, STACK.idToIndex[selectedFigureId] + 1);
+                var cmdMoveForward = new FigureZOrderCommand(selectedFigureId, STACK.idToIndex[selectedFigureId] + 1);
                 cmdMoveForward.execute();
                 History.addUndo(cmdMoveForward);
                 redraw = true;

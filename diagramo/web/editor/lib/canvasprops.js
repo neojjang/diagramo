@@ -13,7 +13,7 @@ function CanvasProps(width, height){
     this.width = width;
     /**Canvas height*/
     this.height = height;
-    /**Canvas id. Used in main.js:updateFigure() to see what object we have*/
+    /**Canvas id. Used in main.js:updateShape() to see what object we have*/
     this.id = "canvasProps"; //
     /**Serialization type*/
     this.oType = 'CanvasProps';
@@ -47,6 +47,11 @@ CanvasProps.load = function(o){
 CanvasProps.prototype = {
     
     constructor : CanvasProps,
+    
+    /**Just clone the damn thing :)*/
+    clone : function(){
+       return new CanvasProps(this.width, this.height);
+    },
     
     /**Get width of the canvas*/
     getWidth:function(){

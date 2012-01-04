@@ -32,7 +32,7 @@ function ImageFrame(url, x, y, scale, frameWidth, frameHeight){
      *  * - - - * (x+20, y)
      * (x, y)
      *  
-     *So when the text is transformed we will only transform the vector and get the new angle (if needed)
+     *So when the image is transformed we will only transform the vector and get the new angle (if needed)
      *from it*/
     this.vector = [new Point(x,y),new Point(x,y-20), new Point(x+20, y)];
     
@@ -46,12 +46,20 @@ function ImageFrame(url, x, y, scale, frameWidth, frameHeight){
     if(frameWidth){
         this.constraints = true;
     }
+    else{
+        //this.frameWidth = ImageFrame.DEFAULT_WIDTH;
+        //throw "ImageFrame.js->constructor()->frameWidth not set";
+    }
 
     
     /**The the frame height*/
     this.frameHeight = frameHeight;
-            if(frameHeight){        
+    if(frameHeight){        
         this.constraints = true;
+    }
+    else{
+        //this.frameHeight = ImageFrame.DEFAULT_HEIGHT;
+        //throw "ImageFrame.js->constructor()->frameHeight not set";
     }
     
     /**Trigger or not the scalling of the image, after transformations*/
@@ -164,13 +172,12 @@ ImageFrame.prototype = {
                 url : anImageFrame.url,
                 debug : anImageFrame.debug,
                 style : anImageFrame.style,
-                oType : anImageFrame.oType,
+                oType : anImageFrame.oType
             }
         }(this);        
     },
     
     
-    //    
     /**
      *This will load the image asynchronously
      *@param {String} url - the URL used to load image from
@@ -196,11 +203,15 @@ ImageFrame.prototype = {
 
                     //in case no frame set use image's dimensions
                     if(anImageFrame.constraints){
-                    //nothing, we will keep current width and height
+                        //nothing, we will keep current width and height
+                        Log.info("Constrains present");
                     }
                     else{
-                        anImageFrame.frameHeight = anImageFrame.image.height;
-                        anImageFrame.frameWidth = anImageFrame.image.width;
+                        Log.info("Original image loaded. Image height: " + anImageFrame.image.height + " width: " + anImageFrame.image.width)
+                        if(!anImageFrame.constraints){ //if no constraints than load the image naturally
+                            anImageFrame.frameHeight = anImageFrame.image.height;
+                            anImageFrame.frameWidth = anImageFrame.image.width;
+                        }
                     }
 
                     //force a repain - ouch!
@@ -215,6 +226,8 @@ ImageFrame.prototype = {
                     Log.error("Error with image. URL: " + anImageFrame.url + " loaded: " + anImageFrame.loaded);
                 }
             } (this);
+            
+            //trigger loading
             this.image.src = url;
         }
     },
@@ -305,6 +318,11 @@ ImageFrame.prototype = {
             //update the frameset
             this.frameHeight *= vRatio;
             this.frameWidth *= hRatio;
+            
+            //now we have constraints
+            if(vRatio != 1 || hRatio != 1){
+                this.constraints = true;
+            }
         }
     },
     
@@ -421,6 +439,7 @@ ImageFrame.prototype = {
                 <image x="20" y="20" width="300" height="80" xlink:href="http://diagramo.com/assets/images/logo.gif" />
             </svg>
         </g>
+    @see http://tutorials.jenkov.com/svg/g-element.html ("SVG: g element")
      **/
     toSVG : function (){
         var svg = ''; 
@@ -429,8 +448,9 @@ ImageFrame.prototype = {
             var angle = this.getAngle() * 180 / Math.PI;
             //            var angle = this.getAngle() * 180 / Math.PI;
 
-            svg += '<g transform="rotate (' + angle + ', ' + this.vector[0].x  + ', ' + this.vector[0].y + ')">';
-            svg += '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">';
+            svg += "\n" + repeat("\t", INDENTATION) + '<g transform="rotate (' + angle + ', ' + this.vector[0].x  + ', ' + this.vector[0].y + ')">';
+            INDENTATION++;
+//            svg += "\n" + repeat("\t", INDENTATION) + '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">';
 
 
             Log.group("A paint");
@@ -453,13 +473,14 @@ ImageFrame.prototype = {
             var imageX = this.vector[0].x - imgScaledWidth / 2;
             var imageY = this.vector[0].y - imgScaleHeight / 2;
 
-
-            svg += '<image x="' + imageX + '" y="' + imageY +'" width="' + imgScaledWidth +  '" height="' + imgScaleHeight + '" xlink:href="' + this.getUrl() + '" />';
-
+//            INDENTATION++;
+            svg += "\n" + repeat("\t", INDENTATION) + '<image x="' + imageX + '" y="' + imageY +'" width="' + imgScaledWidth +  '" height="' + imgScaleHeight + '" xlink:href="' + this.getUrl() + '" />';
+//            INDENTATION--;
             Log.groupEnd();
 
-            svg += '</svg>';
-            svg += '</g>';
+//            svg += "\n" + repeat("\t", INDENTATION) +  '</svg>';
+            INDENTATION--;
+            svg += "\n" + repeat("\t", INDENTATION) +  '</g>';
         }    
 
         return svg;
